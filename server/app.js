@@ -77,8 +77,8 @@ app.post('/links',
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
-router.post('/login');
-router.post('/signup');
+router.post('/login', models.Users.compare);
+router.post('/signup', models.Users.create);
 
 
 /************************************************************/
