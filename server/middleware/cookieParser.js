@@ -1,20 +1,21 @@
 const parseCookies = (req, res, next) => {
-  console.log(req.headers.cookie);
-  if (!req.headers.cookie) {
+  //it will check if the request is with a cookie or not. if not, it will assign an empty cookies obj. Eventually the req.cookies
+  //obj will be updated with shortlyId(s)
+  if (req.cookies === undefined) {
     req.cookies = {};
-    //res.send(req.cookies);
   } else {
-    var cookiesArr = req.headers.cookie.split('; ');
-    cookiesArr.forEach(str => {
-      var index = str.search('=');
-      var key = str.slice(0, index);
-      var value = str.slice(index + 1);
-      req.cookies[key] = value;
-    });
-    //res.send(req.cookies);
+    if (!req.headers.cookie) {
+    } else {
+      var cookiesArr = req.headers.cookie.split('; ');
+      cookiesArr.forEach(str => {
+        var index = str.search('=');
+        var key = str.slice(0, index);
+        var value = str.slice(index + 1);
+        req.cookies[key] = value;
+      });
+    }
   }
-  next();
-
+  next(req.cookies);
 };
 
-module.exports = parseCookies;
+module.exports = { parseCookies };

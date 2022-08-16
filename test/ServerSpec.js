@@ -326,7 +326,7 @@ describe('', function() {
   });
 
   describe('Express Middleware', function() {
-    var cookieParser = require('../server/middleware/cookieParser.js');
+    var { parseCookies } = require('../server/middleware/cookieParser.js');
     var createSession = require('../server/middleware/auth.js').createSession;
 
     describe('Cookie Parser', function() {
@@ -346,19 +346,19 @@ describe('', function() {
 
         var response = httpMocks.createResponse();
 
-        cookieParser(requestWithoutCookies, response, function() {
+        parseCookies(requestWithoutCookies, response, function() {
           var cookies = requestWithoutCookies.cookies;
           expect(cookies).to.be.an('object');
           expect(cookies).to.eql({});
         });
 
-        cookieParser(requestWithCookies, response, function() {
+        parseCookies(requestWithCookies, response, function() {
           var cookies = requestWithCookies.cookies;
           expect(cookies).to.be.an('object');
           expect(cookies).to.eql({ shortlyid: '8a864482005bcc8b968f2b18f8f7ea490e577b20' });
         });
 
-        cookieParser(requestWithMultipleCookies, response, function() {
+        parseCookies(requestWithMultipleCookies, response, function() {
           var cookies = requestWithMultipleCookies.cookies;
           expect(cookies).to.be.an('object');
           expect(cookies).to.eql({
@@ -410,6 +410,7 @@ describe('', function() {
 
           createSession(requestWithCookies, secondResponse, function() {
             var session = requestWithCookies.session;
+            console.log('session', session);
             expect(session).to.be.an('object');
             expect(session.hash).to.exist;
             // expect(session.hash).to.be.cookie;  Should we use https://www.npmjs.com/package/chai-http
@@ -447,12 +448,12 @@ describe('', function() {
           createSession(requestWithoutCookie, response, function() {
             var hash = requestWithoutCookie.session.hash;
             db.query('UPDATE sessions SET userId = ? WHERE hash = ?', [userId, hash], function(error, result) {
-
               var secondResponse = httpMocks.createResponse();
               var requestWithCookies = httpMocks.createRequest();
               requestWithCookies.cookies.shortlyid = hash;
-
+              console.log('requestWithoutCookie', requestWithCookies.headers.cookie === undefined);
               createSession(requestWithCookies, secondResponse, function() {
+                console.log('now here');
                 var session = requestWithCookies.session;
                 expect(session).to.be.an('object');
                 expect(session.user.username).to.eq(username);

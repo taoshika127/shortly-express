@@ -12,6 +12,7 @@
   "scripts": {
     "postinstall": "./node_modules/.bin/jsdoc ./server -r -d docs",
     "start": "nodemon --ignore node_modules server",
+    "start:client": "npx live-server",
     "test": "mocha --bail --reporter nyan test/ServerSpec.js; pkill -n node;",
     "lint": "eslint ./"
   },
