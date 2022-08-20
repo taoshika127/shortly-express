@@ -14,7 +14,12 @@ app.use(partials());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
+app.use((req, res, next) => {
+  Auth.createSession(req, res, next);
 
+});
+app.post('/signup', Auth.verifySessionAtSignUp);
+app.post('/login', Auth.verifySessionAtLogIn);
 
 
 app.get('/',
@@ -77,8 +82,10 @@ app.post('/links',
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
-router.post('/login', models.Users.compare);
-router.post('/signup', models.Users.create);
+// router.use(Auth.verifySessionAtLogIn);
+// router.post('/login', models.Users.compare);
+// router.use(Auth.verifySessionAtSignUp);
+// router.post('/signup', models.Users.create);
 
 
 /************************************************************/
