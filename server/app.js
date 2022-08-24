@@ -5,6 +5,12 @@ const partials = require('express-partials');
 const Auth = require('./middleware/auth');
 const models = require('./models');
 const router = require('express').Router();
+var mysql = require('mysql2');
+const db = mysql.createConnection({
+  user: 'root',
+  password: '',
+  database: 'shortly'
+});
 
 const app = express();
 
@@ -18,29 +24,55 @@ app.use((req, res, next) => {
   Auth.createSession(req, res, next);
 
 });
+
+app.get('/signup', (req, res) => {
+  res.render('signup');
+});
 app.post('/signup', Auth.verifySessionAtSignUp);
+
+app.get('/login', (req, res) => {
+  res.render('login');
+});
 app.post('/login', Auth.verifySessionAtLogIn);
 
+app.get('/logout', Auth.destroySessionAfterLogOut);
 
 app.get('/',
   (req, res) => {
-    res.render('index');
+    console.log('getrequest for home page', req.session);
+    db.query('SELECT * FROM signedup', (err, result) => {
+      if (result.length === 0 || result[0].signedup === 0) {
+        res.redirect('/login');
+      } else {
+        res.render('index');
+      }
+    });
   });
 
 app.get('/create',
   (req, res) => {
-    res.render('index');
+    if (req.session.loggedIn) {
+      res.render('index');
+    } else {
+      res.redirect('/login');
+    }
   });
 
 app.get('/links',
   (req, res, next) => {
-    models.Links.getAll()
-      .then(links => {
-        res.status(200).send(links);
-      })
-      .error(error => {
-        res.status(500).send(error);
-      });
+    db.query('SELECT * FROM signedup', (err, result) => {
+      if (result.length === 0 || result[0].signedup === 0) {
+        res.redirect('/login');
+      } else {
+        models.Links.getAll()
+          .then(links => {
+            res.status(200).send(links);
+          })
+          .error(error => {
+            res.status(500).send(error);
+          });
+      }
+    });
   });
 
 app.post('/links',
@@ -75,6 +107,7 @@ app.post('/links',
         res.status(500).send(error);
       })
       .catch(link => {
+        console.log('link', link);
         res.status(200).send(link);
       });
   });
@@ -95,10 +128,11 @@ app.post('/links',
 /************************************************************/
 
 app.get('/:code', (req, res, next) => {
+  console.log('its short code');
 
   return models.Links.get({ code: req.params.code })
     .tap(link => {
-
+      console.log('req.params.code', req.params.code);
       if (!link) {
         throw new Error('Link does not exist');
       }
@@ -113,7 +147,8 @@ app.get('/:code', (req, res, next) => {
     .error(error => {
       res.status(500).send(error);
     })
-    .catch(() => {
+    .catch((err) => {
+      console.log('err catched, rendering index');
       res.redirect('/');
     });
 });

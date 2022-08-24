@@ -531,6 +531,7 @@ describe('', function() {
         if (err) { return done(err); }
         var cookies = cookieJar.getCookies('http://127.0.0.1:4568/');
         var cookieValue = cookies[0].value;
+        console.log('cookieVlue', cookieValue);
 
         var queryString = `
           SELECT users.username FROM users, sessions
@@ -551,6 +552,7 @@ describe('', function() {
         if (err) { return done(err); }
         var cookies = cookieJar.getCookies('http://127.0.0.1:4568/');
         var cookieValue = cookies[0].value;
+        console.log('first cookie', cookieValue);
 
         requestWithSession('http://127.0.0.1:4568/logout', function(error, response, resBody) {
           if (error) { return done(error); }
@@ -610,7 +612,7 @@ describe('', function() {
       }
     };
 
-    xbeforeEach(function(done) {
+    beforeEach(function(done) {
       var options = {
         'method': 'POST',
         'followAllRedirects': true,

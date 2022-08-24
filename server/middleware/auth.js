@@ -14,14 +14,14 @@ var createNewCookie = (req, res, next) => {
   var query = 'SELECT * FROM sessions';
   db.query(query, (err, result) => {
     if (result.length >= 1) {
-      next(null, res);
+      next();
     } else {
       hash = hashUtils.createRandom32String();
       var query2 = `INSERT INTO sessions (hash) VALUES ('${hash}')`;
       db.query(query2, () => {
         req.session.hash = hash;
         res.cookie('shortlyid', hash);
-        next(null, res);
+        next();
       });
     }
   });
@@ -67,38 +67,40 @@ const createSession = (req, res, next) => {
 /************************************************************/
 
 const verifySessionAtSignUp = (req, res, next) => {
-  db.query('SELECT * FROM users', (err, result) => {
-    if (result.length === 0) {
-      models.Users.create({ username: req.body.username, password: req.body.password})
-        .then(() => {
-          res.redirect('/');
-        });
-
-      // var query = `INSERT INTO users (username, password) VALUES ('${req.body.username}', '${req.body.password}')`;
-      // db.query(query, (err) => {
-      //   next();
-      // });
+  console.log('signup request');
+  db.query(`SELECT * FROM users WHERE username = '${req.body.username}'`, (err, result) => {
+    if (result.length > 0) {
+      console.log('user exists');
+      res.redirect('/signup');
     } else {
-      var q = `SELECT * FROM users WHERE username = '${req.body.username}'`;
-      db.query(q, (err, result) => {
-        if (result.length > 0) {
-          //user exists
-          res.redirect('/signup');
-        }
-      });
+      models.Users.create({ username: req.body.username, password: req.body.password })
+        .then(() => {
+          db.query('INSERT INTO signedup (signedup) VALUES (1)', err => {
+            var query = `UPDATE (sessions, users) SET sessions.userId = users.id WHERE users.username = '${req.body.username}'`;
+            db.query(query, (err) => {
+              console.log('signup successfully');
+              res.redirect('/');
+            });
+          });
+        });
     }
   });
 };
 
 const verifySessionAtLogIn = (req, res, next) => {
+  console.log('login request');
   var q = `SELECT * FROM users WHERE username = '${req.body.username}'`;
+  var id;
   db.query(q, (err, result) => {
     if (result.length === 0) {
       res.redirect('/login');
     } else {
-      var result = models.Users.compare(req.body.password, result[0].password, result[0].salt);
-      if (result) {
-        res.redirect('/');
+      var match = models.Users.compare(req.body.password, result[0].password, result[0].salt);
+      if (match) {
+        console.log('loggin successfully');
+        db.query('UPDATE signedup SET signedup = 1', err => {
+          res.redirect('/');
+        });
       } else {
         res.redirect('/login');
       }
@@ -107,4 +109,16 @@ const verifySessionAtLogIn = (req, res, next) => {
 
 };
 
-module.exports = { createSession, verifySessionAtSignUp, verifySessionAtLogIn };
+const destroySessionAfterLogOut = (req, res, next) => {
+  console.log('request received at logout');
+  var q = 'TRUNCATE TABLE sessions';
+  db.query(q, (err) => {
+    db.query('TRUNCATE TABLE signedup', err => {
+      hash = hashUtils.createRandom32String();
+      res.cookie('shortlyid', hash);
+      next();
+    });
+  });
+};
+
+module.exports = { createSession, verifySessionAtSignUp, verifySessionAtLogIn, destroySessionAfterLogOut };
